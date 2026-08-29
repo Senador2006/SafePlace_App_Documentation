@@ -4,8 +4,6 @@
 
 Consulta o nível de criminalidade de um bairro em São Paulo — busca, mapa e indicadores — a partir de microdados da SSP/SP.
 
-> Agregação acadêmica. **Não substitui** a estatística oficial da Secretaria da Segurança Pública.
-
 **Repositório:** [github.com/Senador2006/SafePlace_App_Documentation](https://github.com/Senador2006/SafePlace_App_Documentation)
 
 ---
@@ -15,14 +13,14 @@ Consulta o nível de criminalidade de um bairro em São Paulo — busca, mapa e 
 FIAP — 2º ano · Cross Platform Application Development
 
 
-| Nome              | RM     | GitHub                                        |
-| ----------------- | ------ | --------------------------------------------- |
-| Thiago Ono Sakai  | 563448 | [Senador2006](https://github.com/Senador2006) |
-| Pedro Mitsu       | 561710 | [Mitsuo100](https://github.com/Mitsuo100)     |
-| Gabriel Nacarelli | 565298 | [GabrielNaca](https://github.com/GabrielNaca) |
-| Luiz Claro        | 563014 | [LuizC777](https://github.com/LuizC777)       |
-| Andre Gouveia     | 564219 | [andreglim4](https://github.com/andreglim4)   |
-|     |  |    |
+| Nome                       | RM     | GitHub                                        |
+| -------------------------- | ------ | --------------------------------------------- |
+| Thiago Ono Sakai           | 563448 | [Senador2006](https://github.com/Senador2006) |
+| Pedro Mitsu                | 561710 | [Mitsuo100](https://github.com/Mitsuo100)     |
+| Gabriel Nacarelli          | 565298 | [GabrielNaca](https://github.com/GabrielNaca) |
+| Luiz Claro                 | 563014 | [LuizC777](https://github.com/LuizC777)       |
+| Andre Gouveia              | 564219 | [andreglim4](https://github.com/andreglim4)   |
+| Lucas Eiki Tanaka Gushikem | 561607 |                                               |
 
 
 ---
