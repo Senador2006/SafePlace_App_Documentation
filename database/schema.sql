@@ -1,6 +1,6 @@
 -- Schema próprio — App de Segurança Urbana
 -- Destino do ETL a partir de SPDadosCriminais_2026.xlsx (SSP/SP)
--- Ver docs/fonte-de-dados.md
+-- Ver docs/dados.md
 
 PRAGMA foreign_keys = ON;
 

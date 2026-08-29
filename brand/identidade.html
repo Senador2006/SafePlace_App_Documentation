@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SafePlace — Identidade visual</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Montserrat:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --noite: #0D1321;
+      --indigo: #1E2A78;
+      --azul: #4A6CFF;
+      --roxo: #8B5CF6;
+      --verde: #22C55E;
+      --claro: #E5E7EB;
+      --medio: #6B7280;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Inter, system-ui, sans-serif;
+      background: var(--noite);
+      color: var(--claro);
+      line-height: 1.5;
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 48px 24px 80px; }
+    h1, h2, .wordmark { font-family: Montserrat, sans-serif; }
+    .hero { display: flex; gap: 28px; align-items: center; margin-bottom: 56px; }
+    .hero img { width: 96px; height: 96px; border-radius: 22px; }
+    .wordmark { font-size: 42px; font-weight: 700; letter-spacing: -0.6px; }
+    .wordmark span { background: linear-gradient(180deg, var(--azul), var(--roxo)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .tag { letter-spacing: 2.4px; font-size: 12px; color: var(--claro); margin-top: 8px; font-weight: 600; }
+    .lead { max-width: 52ch; color: #cbd5e1; margin-top: 16px; }
+    h2 { font-size: 14px; letter-spacing: 2px; text-transform: uppercase; color: var(--azul); margin: 40px 0 16px; }
+    .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+    .swatch { border-radius: 14px; overflow: hidden; background: #111827; border: 1px solid #1f2937; }
+    .chip { height: 72px; }
+    .swatch p { padding: 10px 12px; font-size: 12px; }
+    .swatch code { display: block; color: var(--medio); font-size: 11px; }
+    .type { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .card { background: #111827; border: 1px solid #1f2937; border-radius: 16px; padding: 24px; }
+    .sample-title { font-family: Montserrat, sans-serif; font-weight: 700; font-size: 28px; }
+    .sample-body { font-size: 15px; color: #cbd5e1; margin-top: 12px; }
+    .icons { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; text-align: center; }
+    .icon {
+      background: #111827; border-radius: 16px; padding: 18px 8px 14px;
+      border: 1px solid #1f2937; color: var(--azul); font-size: 12px;
+    }
+    .icon svg { width: 32px; height: 32px; stroke: var(--azul); fill: none; stroke-width: 1.8; margin-bottom: 8px; }
+    .icon span { display: block; color: var(--claro); }
+    footer { margin-top: 48px; color: var(--medio); font-size: 13px; }
+    @media (max-width: 720px) {
+      .hero { flex-direction: column; align-items: flex-start; }
+      .type, .icons { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <img src="logo/safeplace-logo.png" alt="Logo SafePlace" />
+      <div>
+        <p class="wordmark">Safe<span>Place</span></p>
+        <p class="tag">INFORMAÇÃO QUE PROTEGE. DADOS QUE TRANSFORMAM.</p>
+        <p class="lead">Guia de identidade visual — FIAP, Cross Platform Application Development. Logo, paleta, tipografia e ícones para o app Flutter.</p>
+      </div>
+    </header>
+
+    <h2>Paleta de cores</h2>
+    <div class="swatches">
+      <div class="swatch"><div class="chip" style="background:#0D1321;border-bottom:1px solid #1f2937"></div><p>Azul Noite<code>#0D1321</code></p></div>
+      <div class="swatch"><div class="chip" style="background:#1E2A78"></div><p>Azul Índigo<code>#1E2A78</code></p></div>
+      <div class="swatch"><div class="chip" style="background:#4A6CFF"></div><p>Azul Seguro<code>#4A6CFF</code></p></div>
+      <div class="swatch"><div class="chip" style="background:#8B5CF6"></div><p>Roxo Alerta<code>#8B5CF6</code></p></div>
+      <div class="swatch"><div class="chip" style="background:#22C55E"></div><p>Verde Seguro<code>#22C55E</code></p></div>
+      <div class="swatch"><div class="chip" style="background:#E5E7EB"></div><p style="color:#0D1321">Cinza Claro<code>#E5E7EB</code></p></div>
+      <div class="swatch"><div class="chip" style="background:#6B7280"></div><p>Cinza Médio<code>#6B7280</code></p></div>
+    </div>
+    <p class="lead" style="margin-top:16px">Azuis e roxos transmitem confiança e inteligência de dados. Verde representa segurança e bem-estar.</p>
+
+    <h2>Tipografia</h2>
+    <div class="type">
+      <div class="card">
+        <p class="tag">Títulos / destaques</p>
+        <p class="sample-title">Montserrat</p>
+        <p class="sample-body">ABCDEFGHIJKLMNOPQRSTUVWXYZ<br />abcdefghijklmnopqrstuvwxyz<br />0123456789</p>
+        <p class="sample-body">Moderna, forte e transmite autoridade.</p>
+      </div>
+      <div class="card">
+        <p class="tag">Textos / parágrafos</p>
+        <p class="sample-title" style="font-family:Inter,sans-serif;font-weight:500">Inter</p>
+        <p class="sample-body">ABCDEFGHIJKLMNOPQRSTUVWXYZ<br />abcdefghijklmnopqrstuvwxyz<br />0123456789</p>
+        <p class="sample-body">Garante leitura em textos e interfaces digitais.</p>
+      </div>
+    </div>
+
+    <h2>Ícones</h2>
+    <div class="icons">
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg>
+        <span>Segurança</span>
+      </div>
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><path d="M6 18V10M12 18V6M18 18v-8"/></svg>
+        <span>Estatísticas</span>
+      </div>
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.2"/></svg>
+        <span>Localização</span>
+      </div>
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><path d="M6 9a6 6 0 1112 0c0 7 3 7 3 7H3s3 0 3-7"/><path d="M10 19a2 2 0 004 0"/></svg>
+        <span>Alertas</span>
+      </div>
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><path d="M4 16l5-5 4 3 7-8"/><path d="M15 6h5v5"/></svg>
+        <span>Tendências</span>
+      </div>
+      <div class="icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 8h.01"/></svg>
+        <span>Informação</span>
+      </div>
+    </div>
+
+    <footer>
+      Arquivos: <a href="logo/safeplace-logo.svg" style="color:#4A6CFF">logo SVG</a> ·
+      <a href="logo/safeplace-wordmark.png" style="color:#4A6CFF">wordmark</a> ·
+      <a href="safeplace-brand-board.png" style="color:#4A6CFF">board</a>
+    </footer>
+  </div>
+</body>
+</html>

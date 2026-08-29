@@ -1,0 +1,67 @@
+{
+  "fonte": {
+    "orgao": "SSP/SP",
+    "arquivo": "SPDadosCriminais_2026.xlsx",
+    "periodo": { "inicio": "2026-01-01", "fim": "2026-06-30" },
+    "aviso": "Agregação acadêmica; não substitui estatística oficial."
+  },
+  "cidade": { "id": 1, "nome": "São Paulo", "uf": "SP", "cod_ibge": 3550308 },
+  "bairros": [
+    {
+      "id": 1,
+      "nome": "Pinheiros",
+      "latitude": -23.5615,
+      "longitude": -46.6917,
+      "indicadores": { "furtos": 40, "roubos": 12, "homicidios": 0 }
+    },
+    {
+      "id": 2,
+      "nome": "Moema",
+      "latitude": -23.6010,
+      "longitude": -46.6630,
+      "indicadores": { "furtos": 28, "roubos": 8, "homicidios": 0 }
+    },
+    {
+      "id": 3,
+      "nome": "Liberdade",
+      "latitude": -23.5580,
+      "longitude": -46.6340,
+      "indicadores": { "furtos": 55, "roubos": 22, "homicidios": 1 }
+    },
+    {
+      "id": 4,
+      "nome": "Santana",
+      "latitude": -23.5030,
+      "longitude": -46.6260,
+      "indicadores": { "furtos": 48, "roubos": 18, "homicidios": 1 }
+    },
+    {
+      "id": 5,
+      "nome": "Itaquera",
+      "latitude": -23.5400,
+      "longitude": -46.4560,
+      "indicadores": { "furtos": 70, "roubos": 35, "homicidios": 3 }
+    },
+    {
+      "id": 6,
+      "nome": "Capão Redondo",
+      "latitude": -23.6680,
+      "longitude": -46.7800,
+      "indicadores": { "furtos": 85, "roubos": 42, "homicidios": 4 }
+    },
+    {
+      "id": 7,
+      "nome": "Vila Mariana",
+      "latitude": -23.5890,
+      "longitude": -46.6345,
+      "indicadores": { "furtos": 32, "roubos": 10, "homicidios": 0 }
+    },
+    {
+      "id": 8,
+      "nome": "Sé",
+      "latitude": -23.5505,
+      "longitude": -46.6333,
+      "indicadores": { "furtos": 95, "roubos": 50, "homicidios": 2 }
+    }
+  ]
+}

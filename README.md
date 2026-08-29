@@ -1,64 +1,73 @@
-# App de Segurança Urbana
+# SafePlace
 
-**Objetivo:** ajudar o usuário a consultar o nível de criminalidade de um bairro ou área em São Paulo, de forma simples e visual.
+**Informação que protege. Dados que transformam.**
 
-**Tecnologia prevista:** Flutter (app multiplataforma).
+Consulta o nível de criminalidade de um bairro em São Paulo — busca, mapa e indicadores — a partir de microdados da SSP/SP.
 
-**Fonte de dados:** microdados da SSP/SP em [`SPDadosCriminais_2026.xlsx`](SPDadosCriminais_2026.xlsx), **adaptados** ao modelo próprio do projeto (ver [docs/fonte-de-dados.md](docs/fonte-de-dados.md)).
+> Agregação acadêmica. **Não substitui** a estatística oficial da Secretaria da Segurança Pública.
 
-> Os indicadores do app são agregações acadêmicas a partir da base oficial. **Não substituem** a estatística publicada pela SSP/SP.
-
----
-
-## Escopo
-
-### Funcionalidades
-- **Busca** por nome de bairro (correspondência parcial).
-- **Mapa + detalhe** após a busca: local pesquisado, indicadores do bairro e criminalidade nos arredores.
-- **Dados gerais** da cidade: totais agregados e ranking simples dos bairros por risco.
-
-### Indicadores por bairro
-Derivados de `NATUREZA_APURADA` na base SSP:
-- **Furtos**
-- **Roubos**
-- **Homicídios**
-
-### Nível de risco
-Calculado por soma ponderada e classificado em **Baixo / Médio / Alto** (ver [regras de negócio](docs/regras-de-negocio.md)).
+**Repositório:** [github.com/Senador2006/SafePlace_App_Documentation](https://github.com/Senador2006/SafePlace_App_Documentation)
 
 ---
 
-## Dados: bruto → modelo do app
+## Integrantes
+
+FIAP — 2º ano · Cross Platform Application Development
+
+
+| Nome              | RM     | GitHub                                        |
+| ----------------- | ------ | --------------------------------------------- |
+| Thiago Ono Sakai  | 563448 | [Senador2006](https://github.com/Senador2006) |
+| Pedro Mitsu       | 561710 | [Mitsuo100](https://github.com/Mitsuo100)     |
+| Gabriel Nacarelli | 565298 | [GabrielNaca](https://github.com/GabrielNaca) |
+| Luiz Claro        | 563014 | [LuizC777](https://github.com/LuizC777)       |
+| Andre Gouveia     | 564219 | [andreglim4](https://github.com/andreglim4)   |
+|     |  |    |
+
+
+---
+
+
+
+## Documentação
+
+
+| Arquivo                                        | Conteúdo                                          |
+| ---------------------------------------------- | ------------------------------------------------- |
+| [docs/produto.md](docs/produto.md)             | Problema, público, MVP, marca, tom de voz e pitch |
+| [docs/regras.md](docs/regras.md)               | Regras de negócio e fluxos                        |
+| [docs/dados.md](docs/dados.md)                 | Fonte SSP, modelo e arquitetura Flutter           |
+| [brand/identidade.html](brand/identidade.html) | Logo, paleta, tipografia e ícones                 |
+
+
+---
+
+
+
+## App Flutter
+
+```bash
+cd safeplace
+flutter pub get
+flutter run -d chrome
+```
+
+Windows (com Visual Studio): `flutter run -d windows`.
+
+A home já une **busca de bairro** e **mapa**.
+
+---
+
+
+
+## Estrutura
 
 ```
-SPDadosCriminais_2026.xlsx  (SSP, jan–jun/2026)
-        ↓ filtrar capital + limpar bairro + agregar
-database/schema.sql + seed_sp.sql
-        ↓ espelho para o app
-assets/data/bairros.json  (previsto no Flutter)
+├── README.md
+├── docs/                 produto, regras, dados
+├── brand/                logo e guia visual
+├── database/             schema e seed (destino do ETL)
+├── safeplace/            app Flutter
+└── SPDadosCriminais_2026.xlsx   fonte bruta SSP (não entra no app)
 ```
 
-Detalhes do mapeamento de colunas e regras de ETL: [docs/fonte-de-dados.md](docs/fonte-de-dados.md).
-
----
-
-## O que este repositório contém
-
-| Pasta / arquivo | Conteúdo |
-|-----------------|----------|
-| [SPDadosCriminais_2026.xlsx](SPDadosCriminais_2026.xlsx) | Base bruta SSP (estado; app usa só a capital) |
-| [docs/fonte-de-dados.md](docs/fonte-de-dados.md) | Adaptação SSP → schema do projeto |
-| [docs/regras-de-negocio.md](docs/regras-de-negocio.md) | Regras do produto |
-| [docs/casos-de-uso.md](docs/casos-de-uso.md) | Casos de uso |
-| [docs/modelo-de-dados.md](docs/modelo-de-dados.md) | Modelo próprio (SQL/JSON) |
-| [docs/arquitetura-flutter.md](docs/arquitetura-flutter.md) | Proposta de arquitetura Flutter |
-| [database/schema.sql](database/schema.sql) | Schema SQL do app |
-| [database/seed_sp.sql](database/seed_sp.sql) | Seed agregado (destino do ETL) |
-
-**Ainda não há código do app Flutter neste repositório** — ideia, regras e modelagem de dados para implementação futura.
-
----
-
-## Fora de escopo (de propósito)
-
-Login, denúncias em tempo real, API oficial da SSP (inexistente para este uso), push notifications e painel admin.

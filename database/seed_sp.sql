@@ -1,6 +1,6 @@
 -- Seed — São Paulo (destino do ETL da SSP)
 -- Fonte bruta: SPDadosCriminais_2026.xlsx (SSP/SP), aba JAN-JUN_2026
--- Pipeline: docs/fonte-de-dados.md
+-- Pipeline: docs/dados.md
 --
 -- Os números abaixo são PLACEHOLDER até rodar a agregação real
 -- (filtrar capital + COUNT por BAIRRO e NATUREZA_APURADA).
