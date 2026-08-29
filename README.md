@@ -4,8 +4,6 @@
 
 Consulta o nível de criminalidade de um bairro em São Paulo — busca, mapa e indicadores — a partir de microdados da SSP/SP.
 
-> Agregação acadêmica. **Não substitui** a estatística oficial da Secretaria da Segurança Pública.
-
 **Repositório:** [github.com/Senador2006/SafePlace_App_Documentation](https://github.com/Senador2006/SafePlace_App_Documentation)
 
 ---
