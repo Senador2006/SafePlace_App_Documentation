@@ -1,44 +1,62 @@
--- Schema próprio — App de Segurança Urbana
--- Destino do ETL a partir de SPDadosCriminais_2026.xlsx (SSP/SP)
--- Ver docs/dados.md
+-- Postgres (Supabase). Rode uma vez no SQL Editor.
+-- Se a tabela já existir, não rode o CREATE de novo.
+-- Os dados de exemplo estão em seed_sp.sql.
 
-PRAGMA foreign_keys = ON;
-
-CREATE TABLE IF NOT EXISTS cidade (
-    id        INTEGER PRIMARY KEY,
-    nome      TEXT    NOT NULL,
-    uf        TEXT    NOT NULL,
-    cod_ibge  INTEGER NOT NULL UNIQUE  -- SSP: COD IBGE (capital = 3550308)
+create table cidade (
+  id bigint generated always as identity primary key,
+  nome text not null,
+  uf text not null,
+  cod_ibge integer not null unique
 );
 
-CREATE TABLE IF NOT EXISTS bairro (
-    id        INTEGER PRIMARY KEY,
-    cidade_id INTEGER NOT NULL,
-    nome      TEXT    NOT NULL,          -- SSP: BAIRRO (normalizado)
-    latitude  REAL    NOT NULL,          -- média de LATITUDE válidas
-    longitude REAL    NOT NULL,          -- média de LONGITUDE válidas
-    FOREIGN KEY (cidade_id) REFERENCES cidade(id)
+create table bairro (
+  id bigint generated always as identity primary key,
+  cidade_id bigint not null references cidade (id),
+  nome text not null,
+  latitude double precision not null,
+  longitude double precision not null
 );
 
-CREATE TABLE IF NOT EXISTS tipo_crime (
-    id     INTEGER PRIMARY KEY,
-    codigo TEXT    NOT NULL UNIQUE,      -- furto | roubo | homicidio
-    nome   TEXT    NOT NULL
+create table tipo_crime (
+  id bigint generated always as identity primary key,
+  codigo text not null unique,
+  nome text not null
 );
 
--- quantidade = COUNT(*) das linhas SSP filtradas por bairro + natureza + período
-CREATE TABLE IF NOT EXISTS indicador_criminalidade (
-    id            INTEGER PRIMARY KEY,
-    bairro_id     INTEGER NOT NULL,
-    tipo_crime_id INTEGER NOT NULL,
-    quantidade    INTEGER NOT NULL CHECK (quantidade >= 0),
-    periodo_inicio TEXT   NOT NULL,       -- ex.: 2026-01-01
-    periodo_fim    TEXT   NOT NULL,       -- ex.: 2026-06-30
-    FOREIGN KEY (bairro_id) REFERENCES bairro(id),
-    FOREIGN KEY (tipo_crime_id) REFERENCES tipo_crime(id),
-    UNIQUE (bairro_id, tipo_crime_id, periodo_inicio, periodo_fim)
+create table indicador_criminalidade (
+  id bigint generated always as identity primary key,
+  bairro_id bigint not null references bairro (id),
+  tipo_crime_id bigint not null references tipo_crime (id),
+  quantidade integer not null check (quantidade >= 0),
+  periodo_inicio date not null,
+  periodo_fim date not null,
+  unique (bairro_id, tipo_crime_id, periodo_inicio, periodo_fim)
 );
 
-CREATE INDEX IF NOT EXISTS idx_bairro_cidade ON bairro(cidade_id);
-CREATE INDEX IF NOT EXISTS idx_bairro_nome ON bairro(nome);
-CREATE INDEX IF NOT EXISTS idx_indicador_bairro ON indicador_criminalidade(bairro_id);
+create table plano (
+  usuario_id uuid primary key references auth.users (id) on delete cascade,
+  eh_pro boolean not null default false,
+  ja_usou_relatorio_gratis boolean not null default false
+);
+
+alter table cidade enable row level security;
+alter table bairro enable row level security;
+alter table tipo_crime enable row level security;
+alter table indicador_criminalidade enable row level security;
+alter table plano enable row level security;
+
+create policy "leitura da cidade" on cidade
+  for select to authenticated using (true);
+create policy "leitura dos bairros" on bairro
+  for select to authenticated using (true);
+create policy "leitura dos tipos" on tipo_crime
+  for select to authenticated using (true);
+create policy "leitura dos indicadores" on indicador_criminalidade
+  for select to authenticated using (true);
+
+create policy "le o proprio plano" on plano
+  for select to authenticated using (usuario_id = auth.uid());
+create policy "cria o proprio plano" on plano
+  for insert to authenticated with check (usuario_id = auth.uid());
+create policy "atualiza o proprio plano" on plano
+  for update to authenticated using (usuario_id = auth.uid());

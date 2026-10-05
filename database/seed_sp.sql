@@ -6,14 +6,14 @@
 -- (filtrar capital + COUNT por BAIRRO e NATUREZA_APURADA).
 -- Período alvo do XLSX atual: 2026-01-01 a 2026-06-30.
 
-INSERT INTO cidade (id, nome, uf, cod_ibge) VALUES (1, 'São Paulo', 'SP', 3550308);
+INSERT INTO cidade (id, nome, uf, cod_ibge) OVERRIDING SYSTEM VALUE VALUES (1, 'São Paulo', 'SP', 3550308);
 
-INSERT INTO tipo_crime (id, codigo, nome) VALUES
+INSERT INTO tipo_crime (id, codigo, nome) OVERRIDING SYSTEM VALUE VALUES
     (1, 'furto', 'Furto'),
     (2, 'roubo', 'Roubo'),
     (3, 'homicidio', 'Homicídio');
 
-INSERT INTO bairro (id, cidade_id, nome, latitude, longitude) VALUES
+INSERT INTO bairro (id, cidade_id, nome, latitude, longitude) OVERRIDING SYSTEM VALUE VALUES
     (1, 1, 'Pinheiros',       -23.5615, -46.6917),
     (2, 1, 'Moema',           -23.6010, -46.6630),
     (3, 1, 'Liberdade',       -23.5580, -46.6340),
@@ -25,7 +25,7 @@ INSERT INTO bairro (id, cidade_id, nome, latitude, longitude) VALUES
 
 -- Período alinhado ao XLSX atual (JAN-JUN_2026)
 -- PLACEHOLDER: substituir quantidades pelo COUNT real do ETL
-INSERT INTO indicador_criminalidade (id, bairro_id, tipo_crime_id, quantidade, periodo_inicio, periodo_fim) VALUES
+INSERT INTO indicador_criminalidade (id, bairro_id, tipo_crime_id, quantidade, periodo_inicio, periodo_fim) OVERRIDING SYSTEM VALUE VALUES
     (1, 1, 1, 40, '2026-01-01', '2026-06-30'),
     (2, 1, 2, 12, '2026-01-01', '2026-06-30'),
     (3, 1, 3, 0,  '2026-01-01', '2026-06-30'),

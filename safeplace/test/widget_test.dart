@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:safeplace/main.dart';
+import 'package:safeplace/screens/cadastro_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -19,6 +20,24 @@ void main() {
 
     await tester.pumpWidget(const SafePlaceApp());
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    await tester.tap(find.widgetWithText(TextButton, 'Criar conta'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    final campos = find.descendant(
+      of: find.byType(CadastroScreen),
+      matching: find.byType(TextField),
+    );
+    await tester.enterText(campos.at(0), 'Ana');
+    await tester.enterText(campos.at(1), 'ana@fiap.com');
+    await tester.enterText(campos.at(2), '123456');
+    tester.view.viewInsets = FakeViewPadding.zero;
+    await tester.tap(find.widgetWithText(FilledButton, 'Criar conta'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
     for (var i = 0; i < 20 && find.text('Pinheiros').evaluate().isEmpty; i++) {
       await tester.pump(const Duration(milliseconds: 50));
     }

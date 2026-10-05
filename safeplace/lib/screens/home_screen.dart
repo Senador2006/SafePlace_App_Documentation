@@ -7,6 +7,7 @@ import 'package:safeplace/data/local_repository.dart';
 import 'package:safeplace/models/bairro.dart';
 import 'package:safeplace/screens/planos_screen.dart';
 import 'package:safeplace/screens/relatorio_screen.dart';
+import 'package:safeplace/services/auth_controller.dart';
 import 'package:safeplace/services/contorno_service.dart';
 import 'package:safeplace/services/plano_controller.dart';
 import 'package:safeplace/services/relatorio_service.dart';
@@ -118,6 +119,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _sair() async {
+    final plano = PlanoScope.of(context);
+    final auth = AuthScope.of(context);
+    await plano.desvincular();
+    await auth.sair();
+    if (!mounted) return;
+    Navigator.of(context).popUntil((rota) => rota.isFirst);
+  }
+
   void _abrirRelatorio(Bairro bairro) {
     final plano = PlanoScope.of(context);
     final acesso = plano.acessoRelatorio();
@@ -170,6 +180,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onQuery: (value) => setState(() => _query = value),
               onSelect: _selecionar,
               onPlanos: _abrirPlanos,
+              onSair: _sair,
             );
             final mapa = _MapPanel(
               mapController: _mapController,
@@ -220,6 +231,7 @@ class _SearchPanel extends StatelessWidget {
     required this.onQuery,
     required this.onSelect,
     required this.onPlanos,
+    required this.onSair,
   });
 
   final TextEditingController controller;
@@ -232,6 +244,7 @@ class _SearchPanel extends StatelessWidget {
   final ValueChanged<String> onQuery;
   final ValueChanged<Bairro> onSelect;
   final VoidCallback onPlanos;
+  final VoidCallback onSair;
 
   @override
   Widget build(BuildContext context) {
@@ -252,6 +265,14 @@ class _SearchPanel extends StatelessWidget {
                     alignment: Alignment.centerLeft,
                     child: SafePlaceWordmark(fontSize: 22),
                   ),
+                ),
+                TextButton(
+                  onPressed: onSair,
+                  style: TextButton.styleFrom(
+                    foregroundColor: SafePlaceColors.mediumGray,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  child: const Text('Sair'),
                 ),
                 TextButton.icon(
                   onPressed: onPlanos,

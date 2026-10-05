@@ -1,13 +1,12 @@
 # Dados e arquitetura — SafePlace
 
-O app **não** lê o XLSX. A planilha da SSP é filtrada, limpa e agregada para SQL (`database/`) e JSON (`safeplace/assets/data/bairros.json`).
+O app **não** lê o XLSX. A planilha da SSP é filtrada, limpa e agregada para o Postgres (`database/`) e, como reserva, para o JSON (`safeplace/assets/data/bairros.json`).
 
 ## Fonte bruta
 
 | Item | Valor |
-|------|--------|
-| Arquivo | `SPDadosCriminais_2026.xlsx` |
-| Órgão | SSP/SP |
+| --- | --- |
+| Arquivo | `SPDadosCriminais_2026.xlsx` (SSP/SP, fora do repositório) |
 | Aba | `JAN-JUN_2026` |
 | Período | jan–jun/2026 |
 | Recorte do app | capital (`COD IBGE = 3550308` / `S.PAULO`) |
@@ -15,10 +14,10 @@ O app **não** lê o XLSX. A planilha da SSP é filtrada, limpa e agregada para 
 ### Colunas usadas
 
 | Coluna SSP | Uso |
-|------------|-----|
+| --- | --- |
 | `COD IBGE` / `NOME_MUNICIPIO` | Filtrar capital → `cidade` |
 | `BAIRRO` | Nome normalizado → `bairro` |
-| `LATITUDE` / `LONGITUDE` | Centro do bairro (média das coords válidas) |
+| `LATITUDE` / `LONGITUDE` | Centro do bairro |
 | `NATUREZA_APURADA` | furto / roubo / homicídio |
 | `MES_ESTATISTICA` / `ANO_ESTATISTICA` | `periodo_inicio` / `periodo_fim` |
 
@@ -39,45 +38,42 @@ flowchart TD
 Normalizar bairro (unificar `SE`/`Sé`, `PINHEIROS`/`Pinheiros`); descartar vazio. Coords: só numéricos válidos (não `0` / `-`); se o bairro não tiver nenhuma, ponto de referência (GeoSampa).
 
 | Código | Critério em `NATUREZA_APURADA` |
-|--------|--------------------------------|
+| --- | --- |
 | `furto` | contém `FURTO` |
 | `roubo` | contém `ROUBO` ou `LATROCÍNIO` |
 | `homicidio` | contém `HOMICÍDIO DOLOSO` |
 
-Demais naturezas ficam fora do MVP.
+Demais naturezas ficam de fora. Os valores atuais do seed e do JSON são placeholder.
 
-## Modelo do app
+## Modelo
 
 ```mermaid
 erDiagram
   CIDADE ||--o{ BAIRRO : possui
   TIPO_CRIME ||--o{ INDICADOR_CRIMINALIDADE : classifica
   BAIRRO ||--o{ INDICADOR_CRIMINALIDADE : registra
+  AUTH_USERS ||--|| PLANO : tem
 ```
 
 | Tabela | Origem |
-|--------|--------|
+| --- | --- |
 | `cidade` | São Paulo / `3550308` |
-| `bairro` | `BAIRRO` + lat/lng médios |
+| `bairro` | `BAIRRO` + lat/lng |
 | `tipo_crime` | furto, roubo, homicidio |
 | `indicador_criminalidade` | `COUNT` por bairro × tipo × período |
+| `plano` | `eh_pro` e o relatório grátis da conta |
+| `auth.users` | e-mail, senha e nome (metadado), no Supabase Auth |
 
-DDL e seed: [`database/schema.sql`](../database/schema.sql), [`database/seed_sp.sql`](../database/seed_sp.sql).
+DDL e seed: [`database/schema.sql`](../database/schema.sql), [`database/seed_sp.sql`](../database/seed_sp.sql). O `id` é `GENERATED ALWAYS`; o seed usa `OVERRIDING SYSTEM VALUE`.
 
-JSON no Flutter (denormalizado):
+O JSON de reserva repete o bairro já com os três totais:
 
 ```json
 {
-  "cidade": { "id": 1, "nome": "São Paulo", "uf": "SP", "cod_ibge": 3550308 },
-  "bairros": [
-    {
-      "id": 1,
-      "nome": "Pinheiros",
-      "latitude": -23.5615,
-      "longitude": -46.6917,
-      "indicadores": { "furtos": 0, "roubos": 0, "homicidios": 0 }
-    }
-  ]
+  "nome": "Pinheiros",
+  "latitude": -23.5615,
+  "longitude": -46.6917,
+  "indicadores": { "furtos": 40, "roubos": 12, "homicidios": 0 }
 }
 ```
 
@@ -85,29 +81,30 @@ JSON no Flutter (denormalizado):
 
 ```
 safeplace/lib/
-  screens/    Home: busca + mapa
-  widgets/    Logo e wordmark
-  theme/      Paleta e tipografia
-  services/   RiskService (RN04)
-  data/       LocalRepository (JSON)
-  models/     Bairro
+  screens/    entrada, login, cadastro, home, planos, relatório
+  widgets/    logo, anúncio, risco, tendência, campo de auth
+  services/   auth, plano, risco, relatório, contorno
+  data/       bairros (Supabase, com reserva no JSON) e anúncios
+  config/     URL e chave anon do Supabase; token da LocationIQ
+  models/     Bairro, Usuario, Anuncio
 ```
 
 ```mermaid
 flowchart LR
-  SSP[XLSX SSP] --> ETL[ETL offline]
-  ETL --> JSON[bairros.json]
-  UI[Home] --> Repo[LocalRepository]
-  Repo --> JSON
-  UI --> Risk[RiskService]
+  UI[Telas] --> Auth[Supabase Auth]
+  UI --> Plano[tabela plano]
+  UI --> Repo[LocalRepository]
+  Repo --> DB[bairro e indicadores]
+  Repo --> JSON[bairros.json]
+  UI --> Mapa[LocationIQ ou OSM]
 ```
 
-Dependências: `flutter_map` + `latlong2` (OSM/Carto, sem chave). Estado inicial: `setState`.
+Logado, `LocalRepository` lê `bairro` com `indicador_criminalidade` e `tipo_crime`. Lista vazia ou erro: usa o JSON. Os testes não iniciam o Supabase e seguem pela conta local.
 
-**Telas:** home (busca + mapa, implementada) e dados gerais da cidade (MVP). Sem SQLite, auth ou favoritos nesta versão.
+Mapa: `flutter_map`. Gráficos: `fl_chart`. Conta e banco: `supabase_flutter`.
 
 ## Limitações
 
-Agregação acadêmica — não substitui a estatística oficial (Resolução SSP 160/01). Nomes de bairro na SSP são texto livre; ~15% das linhas da capital podem ter lat/lng inválidos. A base atual cobre só o 1º semestre de 2026.
+Agregação acadêmica — não substitui a estatística oficial (Resolução SSP 160/01). A série mensal do relatório reparte o total do semestre; não é o mês publicado pela SSP. Nomes de bairro na SSP são texto livre. A base cobre o 1º semestre de 2026.
 
 *Fonte dos microdados: SSP/SP — SPDadosCriminais 2026. Indicadores agregados pelo projeto para fins acadêmicos.*
