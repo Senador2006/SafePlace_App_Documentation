@@ -17,6 +17,8 @@ class Bairro {
   final int roubos;
   final int homicidios;
 
+  int get ocorrencias => furtos + roubos + homicidios;
+
   factory Bairro.fromJson(Map<String, dynamic> json) {
     final indicadores = json['indicadores'] as Map<String, dynamic>;
     return Bairro(

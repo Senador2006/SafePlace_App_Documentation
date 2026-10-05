@@ -1,0 +1,51 @@
+1. TELA DE PLANOS (criar)
+
+- Criar uma nova tela de planos com apenas dois planos: Gratuito e Pro.
+- Plano Gratuito: acesso a todos os dados das regioes, com anuncios, e direito a solicitar o relatorio detalhado uma unica vez.
+- Plano Pro: sem anuncios e com relatorios detalhados ilimitados.
+- Mostrar os beneficios de cada plano de forma clara, com o plano atual do usuario indicado.
+- Botao "Assinar Pro": nao ha pagamento real. Ao tocar, o usuario passa a ser Pro (salvar essa informacao localmente no aparelho, para persistir ao fechar o app).
+- A tela deve ser acessivel a partir da tela principal (por exemplo, um botao ou item de menu "Planos").
+
+
+2. CONTROLE DE PLANO (logica)
+
+- Salvar localmente no aparelho dois valores:
+  - ehPro (verdadeiro/falso), padrao falso.
+  - jaUsouRelatorioGratis (verdadeiro/falso), padrao falso.
+- Ao tocar no botao de relatorio detalhado:
+  - Se ehPro for verdadeiro: abre a tela de relatorio.
+  - Se ehPro for falso e jaUsouRelatorioGratis for falso: abre a tela de relatorio, marca jaUsouRelatorioGratis como verdadeiro e mostra um aviso informando que este foi o relatorio gratuito.
+  - Se ehPro for falso e jaUsouRelatorioGratis for verdadeiro: leva o usuario direto para a tela de planos.
+
+
+3. CARD DA REGIAO (alterar)
+
+- Manter a porcentagem de criminalidade que ja existe.
+- Adicionar, de forma pequena e discreta, os dois crimes mais comuns daquela regiao.
+- Ao lado de cada um desses dois crimes, mostrar uma seta de tendencia: seta para cima se aumentou, seta para baixo se diminuiu, comparando o periodo mais recente disponivel nos dados com o periodo anterior equivalente. Usar cores (vermelho para aumento, verde para queda).
+- Adicionar um botao "Ver relatorio detalhado" com uma sinalizacao clara de recurso Pro (por exemplo, um selo ou etiqueta "PRO" ao lado do texto do botao).
+- Essas informacoes do card sao gratuitas para todos os usuarios.
+
+
+4. TELA DE RELATORIO DETALHADO (criar)
+
+- Deve ser uma tela dentro do proprio aplicativo, aberta ao tocar no botao do card (seguindo a logica do item 2). Recebe a regiao selecionada.
+- Conteudo, usando os mesmos dados de crimes que o app ja carrega:
+  - Nome da regiao e porcentagem de criminalidade.
+  - Grafico de linha com a evolucao das ocorrencias ao longo do tempo (por mes, ou pelo periodo disponivel nos dados).
+  - Lista dos crimes mais comuns da regiao, com quantidade e seta de tendencia.
+  - Grafico de barras comparando a regiao com a media das demais regioes.
+  - Resumo em texto gerado automaticamente com a tendencia geral, por exemplo: "As ocorrencias diminuiram X% em relacao ao periodo anterior."
+  - Ao final, uma secao "Ofertas de parceiros" com anuncios relacionados a seguranca (ver item 5). Essa secao so aparece para usuarios do plano Gratuito.
+- Para os graficos, usar uma biblioteca de graficos adequada ao framework do projeto.
+
+
+5. ANUNCIOS (criar)
+
+- Criar um componente reutilizavel de card de anuncio, com a identificacao "Patrocinado", imagem ou icone, titulo, texto curto e link para um site externo.
+- Os anuncios sao de exemplo, definidos numa lista fixa no proprio app, e devem ser relevantes ao tema do aplicativo: alarmes residenciais, cameras de seguranca, fechaduras eletronicas, seguro residencial, seguro de veiculo, rastreador veicular.
+- Exibir um anuncio na tela principal.
+- Exibir um ou dois anuncios na secao "Ofertas de parceiros" da tela de relatorio.
+- Os anuncios nunca aparecem para usuarios Pro.
+- Os textos dos anuncios devem ser informativos, sem mensagens alarmistas ou de medo.

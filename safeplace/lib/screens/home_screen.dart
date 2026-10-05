@@ -1,11 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:safeplace/config/locationiq_chave.dart';
+import 'package:safeplace/data/anuncios.dart';
 import 'package:safeplace/data/local_repository.dart';
 import 'package:safeplace/models/bairro.dart';
+import 'package:safeplace/screens/planos_screen.dart';
+import 'package:safeplace/screens/relatorio_screen.dart';
+import 'package:safeplace/services/contorno_service.dart';
+import 'package:safeplace/services/plano_controller.dart';
+import 'package:safeplace/services/relatorio_service.dart';
 import 'package:safeplace/services/risk_service.dart';
 import 'package:safeplace/theme/colors.dart';
+import 'package:safeplace/widgets/anuncio_card.dart';
 import 'package:safeplace/widgets/brand_logo.dart';
+import 'package:safeplace/widgets/risk_badge.dart';
+import 'package:safeplace/widgets/tendencia_indicador.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 const _saoPaulo = LatLng(-23.5505, -46.6333);
 
@@ -18,20 +29,23 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _repository = const LocalRepository();
+  final _contornoService = ContornoService();
   final _searchController = TextEditingController();
   final _mapController = MapController();
 
   List<Bairro> _bairros = const [];
   Bairro? _selecionado;
+  ContornoBairro? _contorno;
   String _query = '';
   bool _carregando = true;
+  bool _contornoCarregando = false;
+  String? _avisoContorno;
+  var _pedidoContorno = 0;
 
   List<Bairro> get _filtrados {
     final termo = _query.trim().toLowerCase();
     if (termo.isEmpty) return _bairros;
-    return _bairros
-        .where((b) => b.nome.toLowerCase().contains(termo))
-        .toList();
+    return _bairros.where((b) => b.nome.toLowerCase().contains(termo)).toList();
   }
 
   @override
@@ -49,10 +63,83 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _selecionar(Bairro bairro) {
+  Future<void> _selecionar(Bairro bairro) async {
+    final pedido = ++_pedidoContorno;
     FocusScope.of(context).unfocus();
-    setState(() => _selecionado = bairro);
+    setState(() {
+      _selecionado = bairro;
+      _contorno = null;
+      _contornoCarregando = _contornoService.temChave;
+      _avisoContorno = _contornoService.temChave
+          ? null
+          : 'Cole o token da LocationIQ para desenhar o contorno.';
+    });
     _mapController.move(LatLng(bairro.latitude, bairro.longitude), 14);
+    if (!_contornoService.temChave) return;
+
+    try {
+      final contorno = await _contornoService.buscar(bairro.nome);
+      if (!mounted || pedido != _pedidoContorno) return;
+      setState(() {
+        _contorno = contorno;
+        _contornoCarregando = false;
+        _avisoContorno = contorno == null
+            ? 'A LocationIQ não devolveu o contorno deste bairro.'
+            : null;
+      });
+      final pontos = contorno?.pontos ?? const <LatLng>[];
+      if (pontos.length >= 3) {
+        _mapController.fitCamera(
+          CameraFit.bounds(
+            bounds: LatLngBounds.fromPoints(pontos),
+            padding: const EdgeInsets.fromLTRB(32, 32, 32, 180),
+            maxZoom: 15,
+          ),
+        );
+      }
+    } on ContornoException catch (erro) {
+      if (!mounted || pedido != _pedidoContorno) return;
+      setState(() {
+        _contornoCarregando = false;
+        _avisoContorno = erro.mensagem;
+      });
+    } catch (_) {
+      if (!mounted || pedido != _pedidoContorno) return;
+      setState(() {
+        _contornoCarregando = false;
+        _avisoContorno = 'Não foi possível buscar o contorno agora.';
+      });
+    }
+  }
+
+  void _abrirPlanos() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const PlanosScreen()),
+    );
+  }
+
+  void _abrirRelatorio(Bairro bairro) {
+    final plano = PlanoScope.of(context);
+    final acesso = plano.acessoRelatorio();
+    if (acesso == AcessoRelatorio.planos) {
+      _abrirPlanos();
+      return;
+    }
+
+    final avisoGratis = acesso == AcessoRelatorio.gratis;
+    if (avisoGratis) {
+      plano.marcarRelatorioGratisUsado();
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => RelatorioScreen(
+          bairro: bairro,
+          bairros: _bairros,
+          avisoGratis: avisoGratis,
+        ),
+      ),
+    );
   }
 
   @override
@@ -64,6 +151,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final plano = PlanoScope.of(context);
+
     return Scaffold(
       backgroundColor: SafePlaceColors.nightBlue,
       body: SafeArea(
@@ -75,14 +164,26 @@ class _HomeScreenState extends State<HomeScreen> {
               carregando: _carregando,
               resultados: _filtrados,
               selecionado: _selecionado,
+              mostrarAnuncio: !plano.ehPro,
+              ehPro: plano.ehPro,
+              temChaveContorno: _contornoService.temChave,
               onQuery: (value) => setState(() => _query = value),
               onSelect: _selecionar,
+              onPlanos: _abrirPlanos,
             );
             final mapa = _MapPanel(
               mapController: _mapController,
               bairros: _bairros,
               selecionado: _selecionado,
+              contorno: _contorno,
+              avisoContorno: _contornoCarregando
+                  ? 'Buscando o contorno do bairro...'
+                  : _avisoContorno,
+              tiles: _contornoService.urlTiles,
+              subdominiosTiles: _contornoService.subdominiosTiles,
+              usaLocationIq: _contornoService.temChave,
               onSelect: _selecionar,
+              onRelatorio: _abrirRelatorio,
             );
 
             if (ladoALado) {
@@ -96,7 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             return Column(
               children: [
-                SizedBox(height: constraints.maxHeight * 0.42, child: busca),
+                SizedBox(height: constraints.maxHeight * 0.58, child: busca),
                 Expanded(child: mapa),
               ],
             );
@@ -113,16 +214,24 @@ class _SearchPanel extends StatelessWidget {
     required this.carregando,
     required this.resultados,
     required this.selecionado,
+    required this.mostrarAnuncio,
+    required this.ehPro,
+    required this.temChaveContorno,
     required this.onQuery,
     required this.onSelect,
+    required this.onPlanos,
   });
 
   final TextEditingController controller;
   final bool carregando;
   final List<Bairro> resultados;
   final Bairro? selecionado;
+  final bool mostrarAnuncio;
+  final bool ehPro;
+  final bool temChaveContorno;
   final ValueChanged<String> onQuery;
   final ValueChanged<Bairro> onSelect;
+  final VoidCallback onPlanos;
 
   @override
   Widget build(BuildContext context) {
@@ -131,13 +240,32 @@ class _SearchPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
             child: Row(
               children: [
-                SafePlaceLogo(size: 40),
-                SizedBox(width: 12),
-                SafePlaceWordmark(fontSize: 22),
+                const SafePlaceLogo(size: 40),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: SafePlaceWordmark(fontSize: 22),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: onPlanos,
+                  icon: Icon(
+                    ehPro
+                        ? Icons.verified_outlined
+                        : Icons.workspace_premium_outlined,
+                    size: 18,
+                  ),
+                  label: Text(ehPro ? 'Pro' : 'Planos'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: SafePlaceColors.safeBlue,
+                  ),
+                ),
               ],
             ),
           ),
@@ -174,69 +302,134 @@ class _SearchPanel extends StatelessWidget {
                       color: SafePlaceColors.safeBlue,
                     ),
                   )
-                : resultados.isEmpty
-                    ? const Center(
+                : ListView(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                    children: [
+                      if (!temChaveContorno) ...[
+                        const _AvisoChaveContorno(),
+                        const SizedBox(height: 8),
+                      ],
+                      if (mostrarAnuncio) ...[
+                        AnuncioCard(anuncio: Anuncios.principal),
+                        const SizedBox(height: 8),
+                      ],
+                      if (resultados.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24),
+                          child: Text(
+                            'Nenhum bairro encontrado.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: SafePlaceColors.mediumGray),
+                          ),
+                        )
+                      else
+                        for (final bairro in resultados) ...[
+                          _BairroTile(
+                            bairro: bairro,
+                            ativo: selecionado?.id == bairro.id,
+                            onSelect: () => onSelect(bairro),
+                          ),
+                          const SizedBox(height: 4),
+                        ],
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(8, 8, 8, 4),
                         child: Text(
-                          'Nenhum bairro encontrado.',
-                          style: TextStyle(color: SafePlaceColors.mediumGray),
+                          'Fonte: SSP/SP (microdados). Agregação acadêmica — não substitui estatística oficial.',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 11,
+                            color: SafePlaceColors.mediumGray,
+                          ),
                         ),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                        itemCount: resultados.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 4),
-                        itemBuilder: (context, index) {
-                          final bairro = resultados[index];
-                          final risco = RiskService.of(bairro);
-                          final ativo = selecionado?.id == bairro.id;
-                          return Material(
-                            color: ativo
-                                ? SafePlaceColors.panel
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(12),
-                            child: ListTile(
-                              onTap: () => onSelect(bairro),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              leading: Icon(
-                                Icons.location_on_outlined,
-                                color: risco.color,
-                              ),
-                              title: Text(
-                                bairro.nome,
-                                style: const TextStyle(
-                                  fontFamily: 'Montserrat',
-                                  fontWeight: FontWeight.w600,
-                                  color: SafePlaceColors.white,
-                                ),
-                              ),
-                              subtitle: Text(
-                                'Risco ${risco.label.toLowerCase()} · ${bairro.furtos} furtos',
-                                style: const TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 12,
-                                  color: SafePlaceColors.mediumGray,
-                                ),
-                              ),
-                              trailing: _RiskBadge(risco: risco),
-                            ),
-                          );
-                        },
                       ),
-          ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 4, 20, 12),
-            child: Text(
-              'Fonte: SSP/SP (microdados). Agregação acadêmica — não substitui estatística oficial.',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 11,
-                color: SafePlaceColors.mediumGray,
-              ),
-            ),
+                    ],
+                  ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _AvisoChaveContorno extends StatelessWidget {
+  const _AvisoChaveContorno();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: SafePlaceColors.panel,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: SafePlaceColors.safeBlue),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'O contorno do bairro usa a LocationIQ. A chave gratuita aparece na hora, sem pedido de aprovação.',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 12,
+                height: 1.35,
+                color: SafePlaceColors.lightGray,
+              ),
+            ),
+            TextButton(
+              onPressed: () => launchUrl(Uri.parse(urlCadastroLocationIq)),
+              style: TextButton.styleFrom(
+                foregroundColor: SafePlaceColors.safeBlue,
+                padding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+              ),
+              child: const Text('Obter chave grátis'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BairroTile extends StatelessWidget {
+  const _BairroTile({
+    required this.bairro,
+    required this.ativo,
+    required this.onSelect,
+  });
+
+  final Bairro bairro;
+  final bool ativo;
+  final VoidCallback onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final risco = RiskService.of(bairro);
+    return Material(
+      color: ativo ? SafePlaceColors.panel : Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: ListTile(
+        onTap: onSelect,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        leading: Icon(Icons.location_on_outlined, color: risco.color),
+        title: Text(
+          bairro.nome,
+          style: const TextStyle(
+            fontFamily: 'Montserrat',
+            fontWeight: FontWeight.w600,
+            color: SafePlaceColors.white,
+          ),
+        ),
+        subtitle: Text(
+          'Risco ${risco.label.toLowerCase()} · ${bairro.furtos} furtos',
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 12,
+            color: SafePlaceColors.mediumGray,
+          ),
+        ),
+        trailing: RiskBadge(risco: risco),
       ),
     );
   }
@@ -247,18 +440,28 @@ class _MapPanel extends StatelessWidget {
     required this.mapController,
     required this.bairros,
     required this.selecionado,
+    required this.contorno,
+    required this.avisoContorno,
+    required this.tiles,
+    required this.subdominiosTiles,
+    required this.usaLocationIq,
     required this.onSelect,
+    required this.onRelatorio,
   });
 
   final MapController mapController;
   final List<Bairro> bairros;
   final Bairro? selecionado;
+  final ContornoBairro? contorno;
+  final String? avisoContorno;
+  final String tiles;
+  final List<String> subdominiosTiles;
+  final bool usaLocationIq;
   final ValueChanged<Bairro> onSelect;
+  final ValueChanged<Bairro> onRelatorio;
 
   @override
   Widget build(BuildContext context) {
-    final risco = selecionado == null ? null : RiskService.of(selecionado!);
-
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
       child: ClipRRect(
@@ -275,10 +478,24 @@ class _MapPanel extends StatelessWidget {
               ),
               children: [
                 TileLayer(
-                  urlTemplate:
-                      'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+                  urlTemplate: tiles,
+                  subdomains: subdominiosTiles,
                   userAgentPackageName: 'br.edu.fiap.safeplace',
                 ),
+                if (contorno != null)
+                  PolygonLayer(
+                    polygons: [
+                      for (final anel in contorno!.aneis)
+                        Polygon(
+                          points: anel.externo,
+                          holePointsList:
+                              anel.furos.isEmpty ? null : anel.furos,
+                          color: SafePlaceColors.safeBlue.withValues(alpha: 0.22),
+                          borderColor: SafePlaceColors.safeBlue,
+                          borderStrokeWidth: 2,
+                        ),
+                    ],
+                  ),
                 MarkerLayer(
                   markers: [
                     for (final bairro in bairros)
@@ -300,19 +517,25 @@ class _MapPanel extends StatelessWidget {
                   ],
                 ),
                 RichAttributionWidget(
-                  attributions: const [
-                    TextSourceAttribution('OpenStreetMap'),
-                    TextSourceAttribution('CARTO'),
+                  attributions: [
+                    const TextSourceAttribution('OpenStreetMap'),
+                    if (usaLocationIq)
+                      const TextSourceAttribution('LocationIQ'),
                   ],
                 ),
               ],
             ),
-            if (selecionado != null && risco != null)
+            if (selecionado != null)
               Positioned(
                 left: 16,
                 right: 16,
                 bottom: 16,
-                child: _NeighborhoodCard(bairro: selecionado!, risco: risco),
+                child: _NeighborhoodCard(
+                  bairro: selecionado!,
+                  bairros: bairros,
+                  avisoContorno: avisoContorno,
+                  onRelatorio: () => onRelatorio(selecionado!),
+                ),
               ),
           ],
         ),
@@ -322,13 +545,23 @@ class _MapPanel extends StatelessWidget {
 }
 
 class _NeighborhoodCard extends StatelessWidget {
-  const _NeighborhoodCard({required this.bairro, required this.risco});
+  const _NeighborhoodCard({
+    required this.bairro,
+    required this.bairros,
+    required this.avisoContorno,
+    required this.onRelatorio,
+  });
 
   final Bairro bairro;
-  final RiskResult risco;
+  final List<Bairro> bairros;
+  final String? avisoContorno;
+  final VoidCallback onRelatorio;
 
   @override
   Widget build(BuildContext context) {
+    final risco = RiskService.of(bairro);
+    final relatorio = RelatorioService.of(bairro, bairros);
+
     return Material(
       color: SafePlaceColors.nightBlue.withValues(alpha: 0.94),
       borderRadius: BorderRadius.circular(16),
@@ -351,9 +584,30 @@ class _NeighborhoodCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                _RiskBadge(risco: risco),
+                RiskBadge(risco: risco),
               ],
             ),
+            const SizedBox(height: 6),
+            Text(
+              'Criminalidade ${relatorio.indice}%',
+              style: const TextStyle(
+                fontFamily: 'Montserrat',
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                color: SafePlaceColors.lightGray,
+              ),
+            ),
+            if (avisoContorno != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                avisoContorno!,
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  color: SafePlaceColors.mediumGray,
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             Row(
               children: [
@@ -362,7 +616,87 @@ class _NeighborhoodCard extends StatelessWidget {
                 _Stat(label: 'Homicídios', value: bairro.homicidios),
               ],
             ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 16,
+              runSpacing: 4,
+              children: [
+                for (final crime in relatorio.maisComuns)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        crime.nome,
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          color: SafePlaceColors.mediumGray,
+                        ),
+                      ),
+                      const SizedBox(width: 2),
+                      TendenciaIndicador(
+                        tendencia: crime.tendencia,
+                        size: 14,
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: onRelatorio,
+                style: FilledButton.styleFrom(
+                  backgroundColor: SafePlaceColors.safeBlue,
+                  foregroundColor: SafePlaceColors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        'Ver relatório detalhado',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'Montserrat',
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    _ProSelo(),
+                  ],
+                ),
+              ),
+            ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProSelo extends StatelessWidget {
+  const _ProSelo();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: SafePlaceColors.alertPurple,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: const Text(
+        'PRO',
+        style: TextStyle(
+          fontFamily: 'Montserrat',
+          fontWeight: FontWeight.w700,
+          fontSize: 10,
+          letterSpacing: 0.4,
+          color: SafePlaceColors.white,
         ),
       ),
     );
@@ -399,33 +733,6 @@ class _Stat extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _RiskBadge extends StatelessWidget {
-  const _RiskBadge({required this.risco});
-
-  final RiskResult risco;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: risco.color.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: risco.color),
-      ),
-      child: Text(
-        risco.label,
-        style: TextStyle(
-          fontFamily: 'Montserrat',
-          fontWeight: FontWeight.w600,
-          fontSize: 11,
-          color: risco.color,
-        ),
       ),
     );
   }

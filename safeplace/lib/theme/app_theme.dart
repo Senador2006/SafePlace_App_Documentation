@@ -60,6 +60,18 @@ abstract final class SafePlaceTheme {
       ),
       textTheme: textTheme,
       fontFamily: 'Inter',
+      appBarTheme: const AppBarTheme(
+        backgroundColor: SafePlaceColors.nightBlue,
+        foregroundColor: SafePlaceColors.white,
+        elevation: 0,
+        centerTitle: false,
+        titleTextStyle: TextStyle(
+          fontFamily: 'Montserrat',
+          fontWeight: FontWeight.w700,
+          fontSize: 20,
+          color: SafePlaceColors.white,
+        ),
+      ),
     );
   }
 }
