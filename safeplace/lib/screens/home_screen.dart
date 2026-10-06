@@ -20,6 +20,12 @@ import 'package:safeplace/widgets/tendencia_indicador.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const _saoPaulo = LatLng(-23.5505, -46.6333);
+const _bairrosVisiveisNoCelular = 2;
+const _alturaTileBairro = 72.0;
+const _espacoEntreBairros = 4.0;
+const _alturaListaCompacta =
+    _bairrosVisiveisNoCelular * _alturaTileBairro +
+    (_bairrosVisiveisNoCelular - 1) * _espacoEntreBairros;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -169,6 +175,15 @@ class _HomeScreenState extends State<HomeScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final ladoALado = constraints.maxWidth >= 840;
+            final reservaChrome = 150.0 +
+                (plano.ehPro ? 0 : 88) +
+                (_contornoService.temChave ? 0 : 100);
+            final reservaMapa = constraints.maxHeight * 0.42;
+            final listaDisponivel =
+                constraints.maxHeight - reservaChrome - reservaMapa;
+            final alturaLista = listaDisponivel < _alturaListaCompacta
+                ? (listaDisponivel < 0 ? 0.0 : listaDisponivel)
+                : _alturaListaCompacta;
             final busca = _SearchPanel(
               controller: _searchController,
               carregando: _carregando,
@@ -177,6 +192,8 @@ class _HomeScreenState extends State<HomeScreen> {
               mostrarAnuncio: !plano.ehPro,
               ehPro: plano.ehPro,
               temChaveContorno: _contornoService.temChave,
+              compacto: !ladoALado,
+              alturaLista: alturaLista,
               onQuery: (value) => setState(() => _query = value),
               onSelect: _selecionar,
               onPlanos: _abrirPlanos,
@@ -208,7 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             return Column(
               children: [
-                SizedBox(height: constraints.maxHeight * 0.58, child: busca),
+                busca,
                 Expanded(child: mapa),
               ],
             );
@@ -228,6 +245,8 @@ class _SearchPanel extends StatelessWidget {
     required this.mostrarAnuncio,
     required this.ehPro,
     required this.temChaveContorno,
+    required this.compacto,
+    required this.alturaLista,
     required this.onQuery,
     required this.onSelect,
     required this.onPlanos,
@@ -241,6 +260,8 @@ class _SearchPanel extends StatelessWidget {
   final bool mostrarAnuncio;
   final bool ehPro;
   final bool temChaveContorno;
+  final bool compacto;
+  final double alturaLista;
   final ValueChanged<String> onQuery;
   final ValueChanged<Bairro> onSelect;
   final VoidCallback onPlanos;
@@ -248,9 +269,60 @@ class _SearchPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lista = carregando
+        ? const Center(
+            child: CircularProgressIndicator(color: SafePlaceColors.safeBlue),
+          )
+        : ListView(
+            padding: EdgeInsets.fromLTRB(12, 0, 12, compacto ? 0 : 12),
+            children: [
+              if (!compacto && !temChaveContorno) ...[
+                const _AvisoChaveContorno(),
+                const SizedBox(height: 8),
+              ],
+              if (!compacto && mostrarAnuncio) ...[
+                AnuncioCard(anuncio: Anuncios.principal),
+                const SizedBox(height: 8),
+              ],
+              if (resultados.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Text(
+                    'Nenhum bairro encontrado.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: SafePlaceColors.mediumGray),
+                  ),
+                )
+              else
+                for (final bairro in resultados) ...[
+                  SizedBox(
+                    height: _alturaTileBairro,
+                    child: _BairroTile(
+                      bairro: bairro,
+                      ativo: selecionado?.id == bairro.id,
+                      onSelect: () => onSelect(bairro),
+                    ),
+                  ),
+                  const SizedBox(height: _espacoEntreBairros),
+                ],
+              const Padding(
+                padding: EdgeInsets.fromLTRB(8, 8, 8, 4),
+                child: Text(
+                  'Fonte: SSP/SP (microdados). Agregação acadêmica — não substitui estatística oficial.',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 11,
+                    color: SafePlaceColors.mediumGray,
+                  ),
+                ),
+              ),
+            ],
+          );
+
     return ColoredBox(
       color: SafePlaceColors.nightBlue,
       child: Column(
+        mainAxisSize: compacto ? MainAxisSize.min : MainAxisSize.max,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
@@ -316,56 +388,21 @@ class _SearchPanel extends StatelessWidget {
               ),
             ),
           ),
-          Expanded(
-            child: carregando
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      color: SafePlaceColors.safeBlue,
-                    ),
-                  )
-                : ListView(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                    children: [
-                      if (!temChaveContorno) ...[
-                        const _AvisoChaveContorno(),
-                        const SizedBox(height: 8),
-                      ],
-                      if (mostrarAnuncio) ...[
-                        AnuncioCard(anuncio: Anuncios.principal),
-                        const SizedBox(height: 8),
-                      ],
-                      if (resultados.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 24),
-                          child: Text(
-                            'Nenhum bairro encontrado.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: SafePlaceColors.mediumGray),
-                          ),
-                        )
-                      else
-                        for (final bairro in resultados) ...[
-                          _BairroTile(
-                            bairro: bairro,
-                            ativo: selecionado?.id == bairro.id,
-                            onSelect: () => onSelect(bairro),
-                          ),
-                          const SizedBox(height: 4),
-                        ],
-                      const Padding(
-                        padding: EdgeInsets.fromLTRB(8, 8, 8, 4),
-                        child: Text(
-                          'Fonte: SSP/SP (microdados). Agregação acadêmica — não substitui estatística oficial.',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 11,
-                            color: SafePlaceColors.mediumGray,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
+          if (compacto && !temChaveContorno) ...[
+            const Padding(
+              padding: EdgeInsets.fromLTRB(12, 0, 12, 8),
+              child: _AvisoChaveContorno(),
+            ),
+          ],
+          if (compacto && mostrarAnuncio)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+              child: AnuncioCard(anuncio: Anuncios.principal),
+            ),
+          if (compacto)
+            SizedBox(height: alturaLista, child: lista)
+          else
+            Expanded(child: lista),
         ],
       ),
     );
